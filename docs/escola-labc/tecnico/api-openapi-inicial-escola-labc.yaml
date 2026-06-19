@@ -1,0 +1,329 @@
+openapi: 3.0.3
+info:
+  title: API Escola LaBC de Inovacao Publica
+  version: 0.1.0
+  description: Contrato inicial da API para o MVP da Escola LaBC.
+servers:
+  - url: https://api.exemplo.gov.br
+    description: Producao futura
+  - url: http://localhost:3000/api
+    description: Desenvolvimento local
+tags:
+  - name: Auth
+  - name: Usuarios
+  - name: Cursos
+  - name: Turmas
+  - name: Inscricoes
+  - name: Presencas
+  - name: Materiais
+  - name: Certificados
+  - name: Relatorios
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Autentica usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, senha]
+              properties:
+                email:
+                  type: string
+                  format: email
+                senha:
+                  type: string
+      responses:
+        "200":
+          description: Login realizado
+        "401":
+          description: Credenciais invalidas
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Retorna usuario autenticado
+      responses:
+        "200":
+          description: Usuario autenticado
+  /usuarios:
+    get:
+      tags: [Usuarios]
+      summary: Lista usuarios
+      parameters:
+        - in: query
+          name: busca
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de usuarios
+    post:
+      tags: [Usuarios]
+      summary: Cria usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsuarioInput"
+      responses:
+        "201":
+          description: Usuario criado
+  /usuarios/{id}:
+    get:
+      tags: [Usuarios]
+      summary: Detalha usuario
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Usuario encontrado
+    patch:
+      tags: [Usuarios]
+      summary: Atualiza usuario
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Usuario atualizado
+  /cursos:
+    get:
+      tags: [Cursos]
+      summary: Lista cursos
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: tema
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de cursos
+    post:
+      tags: [Cursos]
+      summary: Cria curso
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CursoInput"
+      responses:
+        "201":
+          description: Curso criado
+  /cursos/{id}:
+    get:
+      tags: [Cursos]
+      summary: Detalha curso
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Curso encontrado
+    patch:
+      tags: [Cursos]
+      summary: Atualiza curso
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Curso atualizado
+  /cursos/{id}/publicar:
+    patch:
+      tags: [Cursos]
+      summary: Publica curso
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Curso publicado
+  /turmas:
+    get:
+      tags: [Turmas]
+      summary: Lista turmas
+      responses:
+        "200":
+          description: Lista de turmas
+    post:
+      tags: [Turmas]
+      summary: Cria turma
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TurmaInput"
+      responses:
+        "201":
+          description: Turma criada
+  /turmas/{id}/inscricoes:
+    post:
+      tags: [Inscricoes]
+      summary: Inscreve participante na turma
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "201":
+          description: Inscricao criada
+        "409":
+          description: Usuario ja inscrito ou turma sem vagas
+  /minhas-inscricoes:
+    get:
+      tags: [Inscricoes]
+      summary: Lista inscricoes do usuario autenticado
+      responses:
+        "200":
+          description: Lista de inscricoes
+  /encontros/{id}/presencas:
+    post:
+      tags: [Presencas]
+      summary: Registra presencas de um encontro
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Presencas registradas
+  /materiais:
+    post:
+      tags: [Materiais]
+      summary: Cria material
+      responses:
+        "201":
+          description: Material criado
+  /inscricoes/{id}/certificado:
+    post:
+      tags: [Certificados]
+      summary: Emite certificado para inscricao apta
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "201":
+          description: Certificado emitido
+        "422":
+          description: Participante nao apto
+  /validar-certificado/{codigo}:
+    get:
+      tags: [Certificados]
+      summary: Valida publicamente um certificado
+      security: []
+      parameters:
+        - in: path
+          name: codigo
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Resultado da validacao
+        "404":
+          description: Certificado nao encontrado
+  /relatorios/dashboard:
+    get:
+      tags: [Relatorios]
+      summary: Retorna indicadores basicos do dashboard
+      parameters:
+        - in: query
+          name: dataInicio
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: dataFim
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Indicadores do dashboard
+components:
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    UsuarioInput:
+      type: object
+      required: [nome, cpf, email]
+      properties:
+        nome:
+          type: string
+        cpf:
+          type: string
+        email:
+          type: string
+          format: email
+        telefone:
+          type: string
+        orgaoSecretaria:
+          type: string
+        cargo:
+          type: string
+        matricula:
+          type: string
+        vinculo:
+          type: string
+    CursoInput:
+      type: object
+      required: [nome, ementa, cargaHoraria, modalidade]
+      properties:
+        nome:
+          type: string
+        descricao:
+          type: string
+        objetivos:
+          type: string
+        ementa:
+          type: string
+        cargaHoraria:
+          type: number
+        modalidade:
+          type: string
+          enum: [presencial, online, hibrido]
+        publicoAlvo:
+          type: string
+        tema:
+          type: string
+    TurmaInput:
+      type: object
+      required: [cursoId, nome, dataInicio, vagas, modalidade]
+      properties:
+        cursoId:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        dataInicio:
+          type: string
+          format: date
+        dataFim:
+          type: string
+          format: date
+        vagas:
+          type: integer
+        local:
+          type: string
+        linkOnline:
+          type: string
+        modalidade:
+          type: string
+          enum: [presencial, online, hibrido]
+        criterioFrequenciaMinima:
+          type: number
+        instrutorId:
+          type: string
+          format: uuid
+

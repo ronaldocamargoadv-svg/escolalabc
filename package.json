@@ -1,0 +1,44 @@
+{
+  "name": "escola-labc",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "PATH=\"/Applications/Codex.app/Contents/Resources/cua_node/bin:/Applications/Codex.app/Contents/Resources:$PATH\" NEXT_TEST_WASM=1 NEXT_TEST_WASM_DIR=\"./node_modules/.pnpm/@next+swc-wasm-nodejs@16.2.6/node_modules/@next/swc-wasm-nodejs\" next dev --webpack",
+    "build": "PATH=\"/Applications/Codex.app/Contents/Resources/cua_node/bin:/Applications/Codex.app/Contents/Resources:$PATH\" NEXT_TEST_WASM=1 NEXT_TEST_WASM_DIR=\"./node_modules/.pnpm/@next+swc-wasm-nodejs@16.2.6/node_modules/@next/swc-wasm-nodejs\" next build --webpack",
+    "start": "PATH=\"/Applications/Codex.app/Contents/Resources/cua_node/bin:/Applications/Codex.app/Contents/Resources:$PATH\" NEXT_TEST_WASM=1 NEXT_TEST_WASM_DIR=\"./node_modules/.pnpm/@next+swc-wasm-nodejs@16.2.6/node_modules/@next/swc-wasm-nodejs\" next start",
+    "lint": "PATH=\"/Applications/Codex.app/Contents/Resources/cua_node/bin:/Applications/Codex.app/Contents/Resources:$PATH\" tsc --noEmit -p tsconfig.lint.json",
+    "test:transcricoes": "PATH=\"/Applications/Codex.app/Contents/Resources/cua_node/bin:/Applications/Codex.app/Contents/Resources:$PATH\" node scripts/test-transcricoes.mjs",
+    "test:security": "PATH=\"/Applications/Codex.app/Contents/Resources/cua_node/bin:/Applications/Codex.app/Contents/Resources:$PATH\" node scripts/security-audit.mjs",
+    "prisma:generate": "PATH=\"/Applications/Codex.app/Contents/Resources/cua_node/bin:/Applications/Codex.app/Contents/Resources:$PATH\" prisma generate",
+    "prisma:migrate": "PATH=\"/Applications/Codex.app/Contents/Resources/cua_node/bin:/Applications/Codex.app/Contents/Resources:$PATH\" prisma migrate dev",
+    "prisma:studio": "PATH=\"/Applications/Codex.app/Contents/Resources/cua_node/bin:/Applications/Codex.app/Contents/Resources:$PATH\" prisma studio",
+    "db:seed": "PATH=\"/Applications/Codex.app/Contents/Resources/cua_node/bin:/Applications/Codex.app/Contents/Resources:$PATH\" node --env-file=.env prisma/seed.mjs",
+    "db:start": "/Users/ronaldosouza/Applications/Postgres.app/Contents/Versions/18/bin/pg_ctl -D .postgres-data-labc -l .postgres-data-labc/server.log -o \"-p 5434\" start",
+    "db:stop": "/Users/ronaldosouza/Applications/Postgres.app/Contents/Versions/18/bin/pg_ctl -D .postgres-data-labc stop"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
+    "next": "^16.0.0",
+    "pdf-lib": "^1.17.1",
+    "pg": "^8.20.0",
+    "prisma": "^5.22.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "zod": "^3.25.57"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@next/swc-wasm-nodejs": "^16.2.6",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.17.57",
+    "@types/pg": "^8.20.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4",
+    "eslint": "^9.28.0",
+    "eslint-config-next": "^16.0.0",
+    "typescript": "^5.8.3"
+  }
+}

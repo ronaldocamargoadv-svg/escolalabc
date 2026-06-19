@@ -1,0 +1,539 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id                String          @id @default(uuid()) @db.Uuid
+  nome              String
+  cpf               String          @unique @db.VarChar(14)
+  email             String          @unique
+  senhaHash         String          @map("senha_hash")
+  telefone          String?
+  endereco          String?
+  orgaoSecretaria   String?         @map("orgao_secretaria")
+  cargo             String?
+  lattesUrl         String?         @map("lattes_url")
+  matricula         String?
+  instituicaoOrigem String?         @map("instituicao_origem")
+  vinculo           String?
+  status            String          @default("ativo") @db.VarChar(20)
+  criadoEm          DateTime        @default(now()) @map("criado_em")
+  atualizadoEm      DateTime        @updatedAt @map("atualizado_em")
+  perfis            UsuarioPerfil[]
+  cursosCriados     Curso[]         @relation("CursoCriador")
+  turmasInstrutor   Turma[]         @relation("TurmaInstrutor")
+  vinculosInstrutoria VinculoInstrutoria[] @relation("InstrutorVinculado")
+  vinculosInstrutoriaCriados VinculoInstrutoria[] @relation("VinculoInstrutoriaCriador")
+  inscricoes        Inscricao[]
+  logs              LogAuditoria[]
+  transcricoes      TranscricaoReuniao[]
+  glossario         TermoGlossario[]
+  progressosCurso   ProgressoCurso[]
+  acessosAula       AcessoAula[]
+  eventosAprendizagem EventoAprendizagem[]
+  eventosAgenda     EventoAgenda[]
+  materiaisPublicados Material[]      @relation("MaterialPublicador")
+  materiaisAtualizados Material[]      @relation("MaterialAtualizador")
+  configuracaoAgenda ConfiguracaoIntegracaoAgenda?
+  convitesCriados   ConviteCadastro[] @relation("ConviteCriador")
+  convitesRevogados ConviteCadastro[] @relation("ConviteRevogador")
+  usosConvites      UsoConviteCadastro[]
+
+  @@map("usuarios")
+}
+
+model TranscricaoReuniao {
+  id                 String              @id @default(uuid()) @db.Uuid
+  titulo             String
+  status             String              @default("pendente") @db.VarChar(30)
+  nomeArquivoOriginal String             @map("nome_arquivo_original")
+  mimeType           String              @map("mime_type") @db.VarChar(120)
+  caminhoAudio       String              @map("caminho_audio")
+  tamanhoBytes       Int                 @map("tamanho_bytes")
+  textoBruto         String?             @map("texto_bruto")
+  textoRevisado      String?             @map("texto_revisado")
+  textoFinal         String?             @map("texto_final")
+  criadoPorId        String?             @map("criado_por") @db.Uuid
+  criadoEm           DateTime            @default(now()) @map("criado_em")
+  atualizadoEm       DateTime            @updatedAt @map("atualizado_em")
+  criadoPor          Usuario?            @relation(fields: [criadoPorId], references: [id])
+  trechos            TrechoTranscricao[]
+
+  @@map("transcricao_reunioes")
+}
+
+model TrechoTranscricao {
+  id            String             @id @default(uuid()) @db.Uuid
+  reuniaoId     String             @map("reuniao_id") @db.Uuid
+  ordem         Int
+  falanteChave  String             @map("falante_chave") @db.VarChar(40)
+  falanteNome   String?            @map("falante_nome")
+  inicioSegundos Int               @map("inicio_segundos")
+  fimSegundos   Int                @map("fim_segundos")
+  assunto       String?
+  textoBruto    String             @map("texto_bruto")
+  textoRevisado String?            @map("texto_revisado")
+  criadoEm      DateTime           @default(now()) @map("criado_em")
+  reuniao       TranscricaoReuniao @relation(fields: [reuniaoId], references: [id], onDelete: Cascade)
+
+  @@index([reuniaoId, ordem])
+  @@index([reuniaoId, falanteChave])
+  @@map("transcricao_trechos")
+}
+
+model TermoGlossario {
+  id              String   @id @default(uuid()) @db.Uuid
+  termo           String   @unique
+  categoria       String   @db.VarChar(40)
+  formaPreferida  String   @map("forma_preferida")
+  observacao      String?
+  criadoPorId     String?  @map("criado_por") @db.Uuid
+  criadoEm        DateTime @default(now()) @map("criado_em")
+  criadoPor       Usuario? @relation(fields: [criadoPorId], references: [id])
+
+  @@map("transcricao_glossario")
+}
+
+model Perfil {
+  id          String            @id @default(uuid()) @db.Uuid
+  nome        String            @unique
+  descricao   String?
+  sistema     Boolean           @default(false)
+  criadoEm    DateTime          @default(now()) @map("criado_em")
+  usuarios    UsuarioPerfil[]
+  permissoes  PerfilPermissao[]
+
+  @@map("perfis")
+}
+
+model Permissao {
+  id        String            @id @default(uuid()) @db.Uuid
+  codigo    String            @unique
+  descricao String?
+  categoria String?
+  criadoEm  DateTime          @default(now()) @map("criado_em")
+  perfis    PerfilPermissao[]
+
+  @@map("permissoes")
+}
+
+model PerfilPermissao {
+  perfilId    String    @map("perfil_id") @db.Uuid
+  permissaoId String    @map("permissao_id") @db.Uuid
+  criadoEm    DateTime  @default(now()) @map("criado_em")
+  perfil      Perfil    @relation(fields: [perfilId], references: [id])
+  permissao   Permissao @relation(fields: [permissaoId], references: [id])
+
+  @@id([perfilId, permissaoId])
+  @@map("perfil_permissoes")
+}
+
+model UsuarioPerfil {
+  usuarioId String   @map("usuario_id") @db.Uuid
+  perfilId  String   @map("perfil_id") @db.Uuid
+  criadoEm  DateTime @default(now()) @map("criado_em")
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  perfil    Perfil   @relation(fields: [perfilId], references: [id])
+
+  @@id([usuarioId, perfilId])
+  @@map("usuario_perfis")
+}
+
+model Curso {
+  id           String     @id @default(uuid()) @db.Uuid
+  nome         String
+  descricao    String?
+  objetivos    String?
+  ementa       String
+  cargaHoraria Decimal    @map("carga_horaria") @db.Decimal(5, 2)
+  modalidade   String     @db.VarChar(30)
+  publicoAlvo  String?    @map("publico_alvo")
+  tema         String?
+  status       String     @default("rascunho") @db.VarChar(20)
+  criadoPorId  String?    @map("criado_por") @db.Uuid
+  criadoEm     DateTime   @default(now()) @map("criado_em")
+  atualizadoEm DateTime   @updatedAt @map("atualizado_em")
+  criadoPor    Usuario?   @relation("CursoCriador", fields: [criadoPorId], references: [id])
+  turmas       Turma[]
+  materiais    Material[]
+  progressosCurso ProgressoCurso[]
+  acessosAula     AcessoAula[]
+  eventosAprendizagem EventoAprendizagem[]
+  eventosAgenda   EventoAgenda[]
+  vinculosInstrutoria VinculoInstrutoria[]
+
+  @@map("cursos")
+}
+
+model Turma {
+  id                         String      @id @default(uuid()) @db.Uuid
+  cursoId                    String      @map("curso_id") @db.Uuid
+  nome                       String
+  dataInicio                 DateTime    @map("data_inicio") @db.Date
+  dataFim                    DateTime?   @map("data_fim") @db.Date
+  vagas                      Int
+  local                      String?
+  linkOnline                 String?     @map("link_online")
+  modalidade                 String      @db.VarChar(30)
+  criterioFrequenciaMinima   Decimal     @default(75) @map("criterio_frequencia_minima") @db.Decimal(5, 2)
+  status                     String      @default("rascunho") @db.VarChar(20)
+  instrutorId                String?     @map("instrutor_id") @db.Uuid
+  criadoEm                   DateTime    @default(now()) @map("criado_em")
+  atualizadoEm               DateTime    @updatedAt @map("atualizado_em")
+  curso                      Curso       @relation(fields: [cursoId], references: [id])
+  instrutor                  Usuario?    @relation("TurmaInstrutor", fields: [instrutorId], references: [id])
+  encontros                  Encontro[]
+  inscricoes                 Inscricao[]
+  materiais                  Material[]
+  forum                      Forum?
+  eventosAgenda              EventoAgenda[]
+  vinculosInstrutoria         VinculoInstrutoria[]
+  convitesInstrutoria         ConviteCadastro[]
+
+  @@map("turmas")
+}
+
+model VinculoInstrutoria {
+  id                    String    @id @default(uuid()) @db.Uuid
+  usuarioId             String    @map("usuario_id") @db.Uuid
+  cursoId               String    @map("curso_id") @db.Uuid
+  turmaId               String    @map("turma_id") @db.Uuid
+  atribuidoPorUsuarioId String    @map("atribuido_por_usuario_id") @db.Uuid
+  status                String    @default("agendado") @db.VarChar(24)
+  inicioEm              DateTime? @map("inicio_em") @db.Date
+  fimEm                 DateTime? @map("fim_em") @db.Date
+  desativadoEm          DateTime? @map("desativado_em")
+  motivoDesativacao     String?   @map("motivo_desativacao")
+  criadoEm              DateTime  @default(now()) @map("criado_em")
+  atualizadoEm          DateTime  @updatedAt @map("atualizado_em")
+  usuario               Usuario   @relation("InstrutorVinculado", fields: [usuarioId], references: [id])
+  curso                 Curso     @relation(fields: [cursoId], references: [id])
+  turma                 Turma     @relation(fields: [turmaId], references: [id])
+  atribuidoPor          Usuario   @relation("VinculoInstrutoriaCriador", fields: [atribuidoPorUsuarioId], references: [id])
+
+  @@index([usuarioId, status])
+  @@index([turmaId, status])
+  @@map("vinculos_instrutoria")
+}
+
+model Encontro {
+  id            String     @id @default(uuid()) @db.Uuid
+  turmaId       String     @map("turma_id") @db.Uuid
+  data          DateTime   @db.Date
+  horarioInicio DateTime   @map("horario_inicio") @db.Time
+  horarioFim    DateTime   @map("horario_fim") @db.Time
+  modalidade    String     @db.VarChar(30)
+  local         String?
+  linkOnline    String?    @map("link_online")
+  status        String     @default("previsto") @db.VarChar(20)
+  criadoEm      DateTime   @default(now()) @map("criado_em")
+  atualizadoEm  DateTime   @updatedAt @map("atualizado_em")
+  turma         Turma      @relation(fields: [turmaId], references: [id])
+  presencas     Presenca[]
+  acessosAula   AcessoAula[]
+  eventosAprendizagem EventoAprendizagem[]
+  eventosAgenda EventoAgenda[]
+  materiais     Material[]
+
+  @@map("encontros")
+}
+
+model Inscricao {
+  id                   String       @id @default(uuid()) @db.Uuid
+  usuarioId            String       @map("usuario_id") @db.Uuid
+  turmaId              String       @map("turma_id") @db.Uuid
+  status               String       @default("inscrito") @db.VarChar(30)
+  dataInscricao        DateTime     @default(now()) @map("data_inscricao")
+  origem               String?
+  percentualFrequencia Decimal      @default(0) @map("percentual_frequencia") @db.Decimal(5, 2)
+  aptoCertificado      Boolean      @default(false) @map("apto_certificado")
+  atualizadoEm         DateTime     @updatedAt @map("atualizado_em")
+  usuario              Usuario      @relation(fields: [usuarioId], references: [id])
+  turma                Turma        @relation(fields: [turmaId], references: [id])
+  presencas            Presenca[]
+  certificado          Certificado?
+  progressoCurso       ProgressoCurso?
+
+  @@unique([usuarioId, turmaId])
+  @@map("inscricoes")
+}
+
+model Presenca {
+  id            String    @id @default(uuid()) @db.Uuid
+  inscricaoId   String    @map("inscricao_id") @db.Uuid
+  encontroId    String    @map("encontro_id") @db.Uuid
+  status        String    @default("presente") @db.VarChar(30)
+  metodo        String    @default("manual") @db.VarChar(30)
+  registradoPor String?   @map("registrado_por") @db.Uuid
+  registradoEm  DateTime  @default(now()) @map("registrado_em")
+  justificativa String?
+  inscricao     Inscricao @relation(fields: [inscricaoId], references: [id])
+  encontro      Encontro  @relation(fields: [encontroId], references: [id])
+
+  @@unique([inscricaoId, encontroId])
+  @@map("presencas")
+}
+
+model Material {
+  id               String    @id @default(uuid()) @db.Uuid
+  cursoId          String?   @map("curso_id") @db.Uuid
+  turmaId          String?   @map("turma_id") @db.Uuid
+  aulaId           String?   @map("aula_id") @db.Uuid
+  titulo           String
+  descricao        String?
+  tipo             String    @db.VarChar(30)
+  url              String?
+  arquivo          String?
+  ordem            Int       @default(0)
+  situacao         String    @default("publicado") @map("status_publicacao") @db.VarChar(20)
+  visibilidade     String    @default("inscritos") @db.VarChar(30)
+  publicadoPor     String?   @map("publicado_por") @db.Uuid
+  atualizadoPor    String?   @map("atualizado_por") @db.Uuid
+  publicadoEm      DateTime  @default(now()) @map("publicado_em")
+  atualizadoEm     DateTime  @updatedAt @map("atualizado_em")
+  excluidoEm       DateTime? @map("excluido_em")
+  curso            Curso?    @relation(fields: [cursoId], references: [id])
+  turma            Turma?    @relation(fields: [turmaId], references: [id])
+  aula             Encontro? @relation(fields: [aulaId], references: [id])
+  autor            Usuario?  @relation("MaterialPublicador", fields: [publicadoPor], references: [id])
+  atualizador      Usuario?  @relation("MaterialAtualizador", fields: [atualizadoPor], references: [id])
+
+  @@index([aulaId, situacao])
+  @@index([turmaId, situacao])
+
+  @@map("materiais")
+}
+
+model Certificado {
+  id                String    @id @default(uuid()) @db.Uuid
+  inscricaoId       String    @unique @map("inscricao_id") @db.Uuid
+  codigoValidacao   String    @unique @map("codigo_validacao") @db.VarChar(80)
+  status            String    @default("valido") @db.VarChar(30)
+  dataEmissao       DateTime  @default(now()) @map("data_emissao")
+  dataCancelamento  DateTime? @map("data_cancelamento")
+  motivoCancelamento String?  @map("motivo_cancelamento")
+  arquivoPdf        String?   @map("arquivo_pdf")
+  hashDocumento     String?   @map("hash_documento")
+  emitidoPor        String?   @map("emitido_por") @db.Uuid
+  inscricao         Inscricao @relation(fields: [inscricaoId], references: [id])
+
+  @@map("certificados")
+}
+
+model Forum {
+  id        String   @id @default(uuid()) @db.Uuid
+  turmaId   String   @unique @map("turma_id") @db.Uuid
+  titulo    String
+  status    String   @default("ativo") @db.VarChar(20)
+  criadoEm  DateTime @default(now()) @map("criado_em")
+  turma     Turma    @relation(fields: [turmaId], references: [id])
+  topicos   Topico[]
+
+  @@map("foruns")
+}
+
+model Topico {
+  id           String       @id @default(uuid()) @db.Uuid
+  forumId      String       @map("forum_id") @db.Uuid
+  usuarioId    String       @map("usuario_id") @db.Uuid
+  titulo       String
+  conteudo     String
+  status       String       @default("publicado") @db.VarChar(20)
+  criadoEm     DateTime     @default(now()) @map("criado_em")
+  atualizadoEm DateTime     @updatedAt @map("atualizado_em")
+  forum        Forum        @relation(fields: [forumId], references: [id])
+  comentarios  Comentario[]
+
+  @@map("topicos")
+}
+
+model Comentario {
+  id           String   @id @default(uuid()) @db.Uuid
+  topicoId     String   @map("topico_id") @db.Uuid
+  usuarioId    String   @map("usuario_id") @db.Uuid
+  conteudo     String
+  status       String   @default("publicado") @db.VarChar(20)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+  topico       Topico   @relation(fields: [topicoId], references: [id])
+
+  @@map("comentarios")
+}
+
+model LogAuditoria {
+  id        String   @id @default(uuid()) @db.Uuid
+  usuarioId String?  @map("usuario_id") @db.Uuid
+  acao      String
+  entidade  String
+  entidadeId String? @map("entidade_id") @db.Uuid
+  resumo    String?
+  ip        String?
+  criadoEm  DateTime @default(now()) @map("criado_em")
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
+
+  @@map("logs_auditoria")
+}
+
+model ProgressoCurso {
+  id                 String    @id @default(uuid()) @db.Uuid
+  usuarioId          String    @map("usuario_id") @db.Uuid
+  cursoId            String    @map("curso_id") @db.Uuid
+  inscricaoId        String    @unique @map("inscricao_id") @db.Uuid
+  status             String    @default("not_started") @db.VarChar(30)
+  iniciadoEm         DateTime? @map("iniciado_em")
+  ultimoAcessoEm     DateTime? @map("ultimo_acesso_em")
+  concluidoEm        DateTime? @map("concluido_em")
+  percentualProgresso Decimal  @default(0) @map("percentual_progresso") @db.Decimal(5, 2)
+  totalAulas         Int       @default(0) @map("total_aulas")
+  aulasConcluidas    Int       @default(0) @map("aulas_concluidas")
+  aulasAcessadas     Int       @default(0) @map("aulas_acessadas")
+  criadoEm           DateTime  @default(now()) @map("criado_em")
+  atualizadoEm       DateTime  @updatedAt @map("atualizado_em")
+  usuario            Usuario   @relation(fields: [usuarioId], references: [id])
+  curso              Curso     @relation(fields: [cursoId], references: [id])
+  inscricao          Inscricao @relation(fields: [inscricaoId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([cursoId])
+  @@index([status])
+  @@map("progresso_cursos")
+}
+
+model AcessoAula {
+  id             String    @id @default(uuid()) @db.Uuid
+  usuarioId      String    @map("usuario_id") @db.Uuid
+  cursoId        String    @map("curso_id") @db.Uuid
+  aulaId         String    @map("aula_id") @db.Uuid
+  primeiroAcessoEm DateTime @default(now()) @map("primeiro_acesso_em")
+  ultimoAcessoEm   DateTime @default(now()) @map("ultimo_acesso_em")
+  quantidadeAcessos Int      @default(1) @map("quantidade_acessos")
+  concluidoEm     DateTime? @map("concluido_em")
+  concluida       Boolean   @default(false)
+  criadoEm        DateTime  @default(now()) @map("criado_em")
+  atualizadoEm    DateTime  @updatedAt @map("atualizado_em")
+  usuario         Usuario   @relation(fields: [usuarioId], references: [id])
+  curso           Curso     @relation(fields: [cursoId], references: [id])
+  aula            Encontro  @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, aulaId])
+  @@index([cursoId])
+  @@map("acessos_aulas")
+}
+
+model EventoAprendizagem {
+  id        String   @id @default(uuid()) @db.Uuid
+  usuarioId String   @map("usuario_id") @db.Uuid
+  cursoId   String   @map("curso_id") @db.Uuid
+  aulaId    String?  @map("aula_id") @db.Uuid
+  tipoEvento String  @map("tipo_evento") @db.VarChar(50)
+  metadata  Json?
+  criadoEm  DateTime @default(now()) @map("criado_em")
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  curso     Curso    @relation(fields: [cursoId], references: [id])
+  aula      Encontro? @relation(fields: [aulaId], references: [id])
+
+  @@index([usuarioId, cursoId])
+  @@index([aulaId])
+  @@index([tipoEvento])
+  @@map("eventos_aprendizagem")
+}
+
+model EventoAgenda {
+  id                    String    @id @default(uuid()) @db.Uuid
+  titulo                String
+  descricao             String?
+  tipo                  String    @db.VarChar(40)
+  inicioEm              DateTime  @map("inicio_em")
+  fimEm                 DateTime  @map("fim_em")
+  local                 String?
+  linkOnline            String?   @map("link_online")
+  cursoId               String?   @map("curso_id") @db.Uuid
+  turmaId               String?   @map("turma_id") @db.Uuid
+  encontroId            String?   @map("encontro_id") @db.Uuid
+  usuarioResponsavelId  String    @map("usuario_responsavel_id") @db.Uuid
+  visibilidade          String    @default("private") @db.VarChar(20)
+  origem                String    @default("manual") @db.VarChar(30)
+  status                String    @default("scheduled") @db.VarChar(20)
+  lembreteMinutos       Int?      @map("lembrete_minutos")
+  sincronizar           Boolean   @default(false)
+  provedorExterno       String    @default("none") @map("provedor_externo") @db.VarChar(20)
+  eventoExternoId       String?   @map("evento_externo_id")
+  criadoEm              DateTime  @default(now()) @map("criado_em")
+  atualizadoEm          DateTime  @updatedAt @map("atualizado_em")
+  usuarioResponsavel    Usuario   @relation(fields: [usuarioResponsavelId], references: [id], onDelete: Cascade)
+  curso                 Curso?    @relation(fields: [cursoId], references: [id])
+  turma                 Turma?    @relation(fields: [turmaId], references: [id])
+  encontro              Encontro? @relation(fields: [encontroId], references: [id])
+
+  @@index([inicioEm])
+  @@index([usuarioResponsavelId])
+  @@index([cursoId])
+  @@index([turmaId])
+  @@map("eventos_agenda")
+}
+
+model ConfiguracaoIntegracaoAgenda {
+  id                         String    @id @default(uuid()) @db.Uuid
+  usuarioId                  String    @unique @map("usuario_id") @db.Uuid
+  provedor                   String    @default("none") @db.VarChar(20)
+  habilitada                 Boolean   @default(false)
+  direcaoSincronizacao       String    @default("export_only") @map("direcao_sincronizacao") @db.VarChar(20)
+  sincronizarEventosCurso    Boolean   @default(true) @map("sincronizar_eventos_curso")
+  sincronizarEventosPessoais Boolean   @default(false) @map("sincronizar_eventos_pessoais")
+  ultimaSincronizacaoEm      DateTime? @map("ultima_sincronizacao_em")
+  criadoEm                   DateTime  @default(now()) @map("criado_em")
+  atualizadoEm               DateTime  @updatedAt @map("atualizado_em")
+  usuario                    Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("configuracoes_integracao_agenda")
+}
+
+model ConviteCadastro {
+  id                    String               @id @default(uuid()) @db.Uuid
+  tokenHash             String               @unique @map("token_hash") @db.VarChar(64)
+  tokenCifrado          String               @map("token_cifrado")
+  tokenPrefixo          String               @map("token_prefixo") @db.VarChar(12)
+  perfilAtribuido       String               @map("perfil_atribuido") @db.VarChar(40)
+  criadoPorUsuarioId    String               @map("criado_por_usuario_id") @db.Uuid
+  maxUsos               Int                  @default(1) @map("max_usos")
+  usosRealizados        Int                  @default(0) @map("usos_realizados")
+  expiraEm              DateTime             @map("expira_em")
+  status                String               @default("active") @db.VarChar(20)
+  emailConvidado        String?              @map("email_convidado")
+  dominioEmailPermitido String?              @map("dominio_email_permitido")
+  observacao            String?
+  criadoEm              DateTime             @default(now()) @map("criado_em")
+  atualizadoEm          DateTime             @updatedAt @map("atualizado_em")
+  revogadoEm            DateTime?            @map("revogado_em")
+  revogadoPorUsuarioId  String?              @map("revogado_por_usuario_id") @db.Uuid
+  turmaInstrutoriaId     String?              @map("turma_instrutoria_id") @db.Uuid
+  criadoPor             Usuario              @relation("ConviteCriador", fields: [criadoPorUsuarioId], references: [id])
+  revogadoPor           Usuario?             @relation("ConviteRevogador", fields: [revogadoPorUsuarioId], references: [id])
+  turmaInstrutoria      Turma?               @relation(fields: [turmaInstrutoriaId], references: [id])
+  usos                  UsoConviteCadastro[]
+
+  @@index([status, expiraEm])
+  @@index([perfilAtribuido])
+  @@map("convites_cadastro")
+}
+
+model UsoConviteCadastro {
+  id         String          @id @default(uuid()) @db.Uuid
+  conviteId  String          @map("convite_id") @db.Uuid
+  usuarioId  String          @map("usuario_id") @db.Uuid
+  usadoEm    DateTime        @default(now()) @map("usado_em")
+  ipAddress  String?         @map("ip_address") @db.VarChar(80)
+  userAgent  String?         @map("user_agent") @db.VarChar(280)
+  convite    ConviteCadastro @relation(fields: [conviteId], references: [id], onDelete: Cascade)
+  usuario    Usuario         @relation(fields: [usuarioId], references: [id])
+
+  @@index([conviteId])
+  @@index([usuarioId])
+  @@map("usos_convites_cadastro")
+}

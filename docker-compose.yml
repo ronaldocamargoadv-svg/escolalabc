@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: escola-labc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: labc
+      POSTGRES_PASSWORD: labc
+      POSTGRES_DB: escola_labc
+    ports:
+      - "5432:5432"
+    volumes:
+      - escola_labc_pgdata:/var/lib/postgresql/data
+
+volumes:
+  escola_labc_pgdata:
