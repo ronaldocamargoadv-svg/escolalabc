@@ -1,2 +1,3 @@
 # escolalabc
 projeto escola labc
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDwzrsb92EZVUS/AZEwbAARPE1htD2IZ9gWKPGz6yJ5F ronaldosouza@local
